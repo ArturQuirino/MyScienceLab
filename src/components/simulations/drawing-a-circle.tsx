@@ -32,8 +32,8 @@ export function DrawingACircle({ labels }: DrawingACircleProps) {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <div className="flex max-w-sm flex-col gap-3 self-start">
-        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+      <div className="flex flex-wrap gap-3 self-start">
+        <label className="flex w-36 flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
           {labels.radius}
           <input
             type="number"
@@ -43,7 +43,7 @@ export function DrawingACircle({ labels }: DrawingACircleProps) {
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+        <label className="flex w-44 flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
           {labels.centerX}
           <input
             type="number"
@@ -53,7 +53,7 @@ export function DrawingACircle({ labels }: DrawingACircleProps) {
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+        <label className="flex w-44 flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
           {labels.centerY}
           <input
             type="number"

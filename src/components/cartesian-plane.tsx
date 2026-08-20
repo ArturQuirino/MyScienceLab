@@ -118,6 +118,17 @@ export function CartesianPlane({
         />
       </g>
 
+      {ticks.map((tick) => (
+        <g key={`label-${tick}`} className="fill-zinc-500 text-xl dark:fill-zinc-400">
+          <text x={toX(tick)} y={originY + 24} textAnchor="middle">
+            {formatTick(tick)}
+          </text>
+          <text x={originX - 12} y={toY(tick) + 6} textAnchor="end">
+            {formatTick(tick)}
+          </text>
+        </g>
+      ))}
+
       <text
         x={plotRight - 18}
         y={originY - 12}
@@ -139,7 +150,11 @@ export function CartesianPlane({
 }
 
 function niceTickStep(range: number) {
-  const rough = range / 8;
+  if (range <= 30) return 1;
+  if (range <= 60) return 2;
+  if (range <= 150) return 5;
+
+  const rough = range / 10;
   const power = 10 ** Math.floor(Math.log10(rough));
   const normalized = rough / power;
 
@@ -147,4 +162,8 @@ function niceTickStep(range: number) {
   if (normalized <= 2) return 2 * power;
   if (normalized <= 5) return 5 * power;
   return 10 * power;
+}
+
+function formatTick(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
