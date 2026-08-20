@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "title": "MyScienceLab",
+    "description": "Plataforma frontend para simuladores matemáticos, físicos e biológicos."
+  },
+  "nav": {
+    "home": "Início",
+    "math": "Matemática",
+    "language": "Idioma"
+  },
+  "home": {
+    "headline": "Simuladores para aprender ciência",
+    "body": "Um shell só de frontend para hospedar simuladores matemáticos, físicos e biológicos. Comece por Matemática."
+  },
+  "math": {
+    "headline": "Matemática",
+    "body": "Os simuladores matemáticos ficarão aqui. Esta página é um placeholder da primeira área da plataforma.",
+    "simulations": {
+      "drawingACircle": {
+        "title": "Desenhando um círculo"
+      }
+    }
+  }
+}
