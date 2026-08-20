@@ -17,7 +17,10 @@
     "body": "Mathematical simulators will live here. This page is a placeholder for the first area of the platform.",
     "simulations": {
       "drawingACircle": {
-        "title": "Drawing a Circle"
+        "title": "Drawing a Circle",
+        "radius": "Radius",
+        "centerX": "Circle center - X axis",
+        "centerY": "Circle center - Y axis"
       }
     }
   }

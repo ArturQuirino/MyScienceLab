@@ -17,7 +17,10 @@
     "body": "Os simuladores matemáticos ficarão aqui. Esta página é um placeholder da primeira área da plataforma.",
     "simulations": {
       "drawingACircle": {
-        "title": "Desenhando um círculo"
+        "title": "Desenhando um círculo",
+        "radius": "Raio",
+        "centerX": "Centro do círculo - Eixo X",
+        "centerY": "Centro do círculo - Eixo Y"
       }
     }
   }
