@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useRef,
   useState,
   type PointerEvent,
@@ -24,6 +25,10 @@ type CartesianPlaneProps = {
 
 const VIEW_SIZE = 1000;
 const PADDING = 48;
+const PLOT_SIZE = VIEW_SIZE - PADDING * 2;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 25;
+const ZOOM_SENSITIVITY = 0.0025;
 
 function equalAspectDomain(
   xMin: number,
@@ -43,6 +48,10 @@ function equalAspectDomain(
   };
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
 export function CartesianPlane({
   xMin,
   xMax,
@@ -58,16 +67,43 @@ export function CartesianPlane({
     lastClientY: number;
   } | null>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
 
-  const domain = equalAspectDomain(
-    xMin + pan.x,
-    xMax + pan.x,
-    yMin + pan.y,
-    yMax + pan.y,
-  );
-  const plotSize = VIEW_SIZE - PADDING * 2;
-  const unitScale = plotSize / (domain.xMax - domain.xMin);
+  const propDomain = equalAspectDomain(xMin, xMax, yMin, yMax);
+  const propMidX = (propDomain.xMin + propDomain.xMax) / 2;
+  const propMidY = (propDomain.yMin + propDomain.yMax) / 2;
+  const baseHalf = (propDomain.xMax - propDomain.xMin) / 2;
+  const half = baseHalf / zoom;
+  const midX = propMidX + pan.x;
+  const midY = propMidY + pan.y;
+
+  const domain = {
+    xMin: midX - half,
+    xMax: midX + half,
+    yMin: midY - half,
+    yMax: midY + half,
+  };
+  const unitScale = PLOT_SIZE / (domain.xMax - domain.xMin);
+
+  const viewRef = useRef({
+    pan,
+    zoom,
+    propMidX,
+    propMidY,
+    baseHalf,
+    domain,
+    unitScale,
+  });
+  viewRef.current = {
+    pan,
+    zoom,
+    propMidX,
+    propMidY,
+    baseHalf,
+    domain,
+    unitScale,
+  };
 
   const toX = (mathX: number) =>
     PADDING + (mathX - domain.xMin) * unitScale;
@@ -91,6 +127,50 @@ export function CartesianPlane({
       ticks.push(rounded);
     }
   }
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    function onWheel(event: WheelEvent) {
+      if (!event.ctrlKey) return;
+
+      event.preventDefault();
+
+      const current = viewRef.current;
+      const svgElement = svgRef.current;
+      if (!svgElement) return;
+
+      const rect = svgElement.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const viewX = ((event.clientX - rect.left) / rect.width) * VIEW_SIZE;
+      const viewY = ((event.clientY - rect.top) / rect.height) * VIEW_SIZE;
+      const mathX =
+        current.domain.xMin + (viewX - PADDING) / current.unitScale;
+      const mathY =
+        current.domain.yMax - (viewY - PADDING) / current.unitScale;
+
+      const factor = Math.exp(-event.deltaY * ZOOM_SENSITIVITY);
+      const nextZoom = clamp(current.zoom * factor, MIN_ZOOM, MAX_ZOOM);
+      if (nextZoom === current.zoom) return;
+
+      const nextHalf = current.baseHalf / nextZoom;
+      const nextMidX =
+        mathX - ((viewX - PADDING) / PLOT_SIZE - 0.5) * 2 * nextHalf;
+      const nextMidY =
+        mathY + ((viewY - PADDING) / PLOT_SIZE - 0.5) * 2 * nextHalf;
+
+      setZoom(nextZoom);
+      setPan({
+        x: nextMidX - current.propMidX,
+        y: nextMidY - current.propMidY,
+      });
+    }
+
+    svg.addEventListener("wheel", onWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", onWheel);
+  }, []);
 
   function clientDeltaToMath(deltaClientX: number, deltaClientY: number) {
     const svg = svgRef.current;
@@ -130,7 +210,6 @@ export function CartesianPlane({
     drag.lastClientY = event.clientY;
 
     const deltaMath = clientDeltaToMath(deltaClientX, deltaClientY);
-    // Move the plane with the pointer (grab-the-paper).
     setPan((current) => ({
       x: current.x - deltaMath.x,
       y: current.y + deltaMath.y,
