@@ -1,8 +1,15 @@
 "use client";
 
+import { STIX_Two_Text } from "next/font/google";
 import { useState } from "react";
 
 import { CartesianPlane } from "@/components/cartesian-plane";
+
+const formulaFont = STIX_Two_Text({
+  subsets: ["latin"],
+  style: ["italic"],
+  weight: ["400", "600"],
+});
 
 type DrawingACircleLabels = {
   radius: string;
@@ -64,6 +71,16 @@ export function DrawingACircle({ labels }: DrawingACircleProps) {
         </label>
       </div>
 
+      <p
+        className={`${formulaFont.className} text-center text-2xl font-semibold tracking-wide text-zinc-800 dark:text-zinc-100`}
+        aria-live="polite"
+      >
+        (x − {formatCenter(safeCenterX)})
+        <sup>2</sup> + (y − {formatCenter(safeCenterY)})
+        <sup>2</sup> = {formatNumber(safeRadius)}
+        <sup>2</sup>
+      </p>
+
       <CartesianPlane
         xMin={xMin}
         xMax={xMax}
@@ -84,4 +101,13 @@ export function DrawingACircle({ labels }: DrawingACircleProps) {
       </CartesianPlane>
     </div>
   );
+}
+
+function formatNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(4)));
+}
+
+function formatCenter(value: number) {
+  const formatted = formatNumber(value);
+  return value < 0 ? `(${formatted})` : formatted;
 }
