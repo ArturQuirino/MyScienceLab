@@ -1,4 +1,11 @@
-import type { ReactNode } from "react";
+"use client";
+
+import {
+  useRef,
+  useState,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 
 export type MathToSvg = {
   toX: (mathX: number) => number;
@@ -44,7 +51,21 @@ export function CartesianPlane({
   className,
   children,
 }: CartesianPlaneProps) {
-  const domain = equalAspectDomain(xMin, xMax, yMin, yMax);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    lastClientX: number;
+    lastClientY: number;
+  } | null>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+
+  const domain = equalAspectDomain(
+    xMin + pan.x,
+    xMax + pan.x,
+    yMin + pan.y,
+    yMax + pan.y,
+  );
   const plotSize = VIEW_SIZE - PADDING * 2;
   const unitScale = plotSize / (domain.xMax - domain.xMin);
 
@@ -71,12 +92,73 @@ export function CartesianPlane({
     }
   }
 
+  function clientDeltaToMath(deltaClientX: number, deltaClientY: number) {
+    const svg = svgRef.current;
+    if (!svg) return { x: 0, y: 0 };
+
+    const rect = svg.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+
+    const deltaViewX = (deltaClientX / rect.width) * VIEW_SIZE;
+    const deltaViewY = (deltaClientY / rect.height) * VIEW_SIZE;
+
+    return {
+      x: deltaViewX / unitScale,
+      y: deltaViewY / unitScale,
+    };
+  }
+
+  function onPointerDown(event: PointerEvent<SVGSVGElement>) {
+    if (event.button !== 0) return;
+
+    dragRef.current = {
+      pointerId: event.pointerId,
+      lastClientX: event.clientX,
+      lastClientY: event.clientY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
+  }
+
+  function onPointerMove(event: PointerEvent<SVGSVGElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const deltaClientX = event.clientX - drag.lastClientX;
+    const deltaClientY = event.clientY - drag.lastClientY;
+    drag.lastClientX = event.clientX;
+    drag.lastClientY = event.clientY;
+
+    const deltaMath = clientDeltaToMath(deltaClientX, deltaClientY);
+    // Move the plane with the pointer (grab-the-paper).
+    setPan((current) => ({
+      x: current.x - deltaMath.x,
+      y: current.y + deltaMath.y,
+    }));
+  }
+
+  function endDrag(event: PointerEvent<SVGSVGElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsDragging(false);
+  }
+
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
-      className={className}
+      className={`${className ?? ""} touch-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
       role="img"
       aria-label="Cartesian plane"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
     >
       <rect
         x={0}
